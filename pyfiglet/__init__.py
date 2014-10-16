@@ -76,7 +76,7 @@ class FigletFont(object):
     reMagicNumber = re.compile(r'^[tf]lf2.')
     reEndMarker = re.compile(r'(.)\s*$')
 
-    def __init__(self, font=DEFAULT_FONT):
+    def __init__(self, font=DEFAULT_FONT, **kwargs):
         self.font = font
 
         self.comment = ''
@@ -84,6 +84,9 @@ class FigletFont(object):
         self.width = {}
         self.data = self.preloadFont(font)
         self.loadFont()
+        if 'smushMode' in kwargs:
+            # Override the smushMode inferred by loadFont():
+            self.smushMode = kwargs['smushMode']
 
     @classmethod
     def preloadFont(cls, font):
@@ -519,19 +522,22 @@ class Figlet(object):
     """
 
     def __init__(self, font=DEFAULT_FONT, direction='auto', justify='auto',
-                 width=80):
-        self.font = font
+                 width=80, fontkwargs=None):
+        if fontkwargs is None:
+            fontkwargs = {}
+        self.font = font    # font name (string)
+        self.Font = None    # Actual Font object, set by setFont()
         self._direction = direction
         self._justify = justify
         self.width = width
-        self.setFont()
+        self.setFont(**fontkwargs)
         self.engine = FigletRenderingEngine(base=self)
 
     def setFont(self, **kwargs):
         if 'font' in kwargs:
-            self.font = kwargs['font']
+            self.font = kwargs.pop('font')
 
-        self.Font = FigletFont(font=self.font)
+        self.Font = FigletFont(font=self.font, **kwargs)
 
     def getDirection(self):
         if self._direction == 'auto':
@@ -594,6 +600,8 @@ def main():
                       help='show installed fonts list')
     parser.add_option('-i', '--info_font', action='store_true', default=False,
                       help='show font\'s information, use with -f FONT')
+    parser.add_option('-s', '--smushmode', type='int',
+                      help='Set how much the text is smushed (forced together). Provided as binary options (power of 2 integers, see manual). Default is 128 (a lot of smushing).')
     opts, args = parser.parse_args()
 
     if opts.list_fonts:
@@ -608,11 +616,15 @@ def main():
         parser.print_help()
         return 1
 
+    fontkwargs = {}
+    if opts.smushmode:
+        fontkwargs['smushMode'] = opts.smushmode
+
     text = ' '.join(args)
 
     f = Figlet(
         font=opts.font, direction=opts.direction,
-        justify=opts.justify, width=opts.width,
+        justify=opts.justify, width=opts.width, fontkwargs=fontkwargs,
     )
 
     r = f.renderText(text)
