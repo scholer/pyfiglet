@@ -6,7 +6,9 @@ Python FIGlet adaption
 
 from __future__ import print_function, unicode_literals
 
-import pkg_resources
+# import pkg_resources  # This causes issues with Sublime Text's limited standard library.
+import importlib        # This should be generally available.
+import os
 import re
 import sys
 from optparse import OptionParser
@@ -38,6 +40,45 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 DEFAULT_FONT = 'standard'
 
 
+#### Replacements for pkg_resources  ####
+
+def get_pkg_dir(pkg):
+    try:
+        if pkg in sys.modules:
+            mod = sys.modules[pkg]
+        else:
+            # I don't think there is a big penalty of importing multiple times...?
+            mod = importlib.import_module(pkg)
+    except ImportError:
+        return False
+    return os.path.dirname(os.path.abspath(mod.__file__))
+
+def get_res_path(pkg, res):
+    pkgdir = get_pkg_dir(pkg)
+    return os.path.join(pkgdir, res)
+
+def resource_exists(pkg, resource):
+    path = get_res_path(pkg, resource)
+    return os.path.isfile(path)
+
+def resource_string(pkg, resource):
+    path = get_res_path(pkg, resource)
+    with open(path) as fd:
+        res_str = fd.read()
+    return res_str
+
+def resource_stream(pkg, resource):
+    path = get_res_path(pkg, resource)
+    fd = open(path)
+    return fd
+
+def resource_listdir(pkg, resource):
+    path = get_res_path(pkg, resource)
+    return os.path.listdir(path)
+
+
+### Utility functions ###
+
 def figlet_format(text, font=DEFAULT_FONT, **kwargs):
     fig = Figlet(font, **kwargs)
     return fig.renderText(text)
@@ -46,6 +87,8 @@ def figlet_format(text, font=DEFAULT_FONT, **kwargs):
 def print_figlet(text, font=DEFAULT_FONT, **kwargs):
     print(figlet_format(text, font, **kwargs))
 
+
+### Error classes ###
 
 class FigletError(Exception):
     def __init__(self, error):
@@ -95,9 +138,16 @@ class FigletFont(object):
         """
         for extension in ('tlf', 'flf'):
             fn = '%s.%s' % (font, extension)
-            if pkg_resources.resource_exists('pyfiglet.fonts', fn):
-                data = pkg_resources.resource_string('pyfiglet.fonts', fn)
-                data = data.decode('UTF-8', 'replace')
+            if resource_exists('pyfiglet.fonts', fn):
+                # https://pythonhosted.org/setuptools/pkg_resources.html
+                # This loads pyfiglet.fonts/<font>.tlf file into data variable.
+                data = resource_string('pyfiglet.fonts', fn)
+                try:
+                    data = data.decode('UTF-8', 'replace')
+                except AttributeError:
+                    # python3 has no decode on strings; and strings are already UTF-8 by default.
+                    # Alternatively, use codecs.open to read the string.
+                    pass
                 return data
         else:
             raise FontNotFound(font)
@@ -106,8 +156,8 @@ class FigletFont(object):
     def isValidFont(cls, font):
         if not font.endswith(('.flf', '.tlf')):
             return False
-        f = pkg_resources.resource_stream('pyfiglet.fonts', font)
-        header = f.readline().decode('UTF-8', 'replace')
+        with resource_stream('pyfiglet.fonts', font) as f:
+            header = f.readline().decode('UTF-8', 'replace')
         return cls.reMagicNumber.search(header)
 
     @classmethod
