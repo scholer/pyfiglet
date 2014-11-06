@@ -42,6 +42,9 @@ DEFAULT_FONT = 'standard'
 
 #### Replacements for pkg_resources  ####
 
+## Note: This doesn't work well if pyfiglet is packaged as a zip file :-/
+## -- In conclusion: It is probably better to 
+
 def get_pkg_dir(pkg):
     try:
         if pkg in sys.modules:
@@ -57,8 +60,12 @@ def get_res_path(pkg, res):
     pkgdir = get_pkg_dir(pkg)
     return os.path.join(pkgdir, res)
 
-def resource_exists(pkg, resource):
+def resource_exists(pkg, resource, debug=True):
+    # How does pkg_resources.resource_exists deal with zipped packages?
     path = get_res_path(pkg, resource)
+    if debug:
+        print("DEBUG: path is:", path)
+        print("DEBUG: os.path.isfile(path)", os.path.isfile(path))
     return os.path.isfile(path)
 
 def resource_string(pkg, resource):
@@ -74,7 +81,7 @@ def resource_stream(pkg, resource):
 
 def resource_listdir(pkg, resource):
     path = get_res_path(pkg, resource)
-    return os.path.listdir(path)
+    return os.listdir(path)
 
 
 ### Utility functions ###
@@ -138,7 +145,7 @@ class FigletFont(object):
         """
         for extension in ('tlf', 'flf'):
             fn = '%s.%s' % (font, extension)
-            if resource_exists('pyfiglet.fonts', fn):
+            if resource_exists('pyfiglet.fonts', fn, debug=True):
                 # https://pythonhosted.org/setuptools/pkg_resources.html
                 # This loads pyfiglet.fonts/<font>.tlf file into data variable.
                 data = resource_string('pyfiglet.fonts', fn)
@@ -150,6 +157,9 @@ class FigletFont(object):
                     pass
                 return data
         else:
+            print("Could not find font '%s'!" % font)
+            fn = '%s.%s' % (font, 'flf')
+            print("resouce_exists('pyfiglet.fonts', %s): %s" % (fn, resource_exists('pyfiglet.fonts', fn, debug=True)))
             raise FontNotFound(font)
 
     @classmethod
