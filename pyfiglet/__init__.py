@@ -43,7 +43,14 @@ DEFAULT_FONT = 'standard'
 #### Replacements for pkg_resources  ####
 
 ## Note: This doesn't work well if pyfiglet is packaged as a zip file :-/
-## -- In conclusion: It is probably better to 
+## -- In conclusion: It is probably better to just include a local copy of
+## pkg_resources module if you suspect it is not available in the install in question.
+## Alternatively do something like this:
+#try:
+#    import pkg_resources  # This causes issues with Sublime Text's limited standard library.
+#except ImportError:
+#    import pkg_resources_local as pkg_resources # Local version
+
 
 def get_pkg_dir(pkg):
     try:
