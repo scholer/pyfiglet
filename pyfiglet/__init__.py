@@ -180,7 +180,8 @@ class FigletFont(object):
     @classmethod
     def getFonts(cls):
         return [font.rsplit('.', 2)[0] for font
-                in pkg_resources.resource_listdir('pyfiglet', 'fonts')
+                #in pkg_resources.resource_listdir('pyfiglet', 'fonts')
+                in resource_listdir('pyfiglet', 'fonts')
                 if cls.isValidFont(font)]
 
     @classmethod
