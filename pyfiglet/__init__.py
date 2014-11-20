@@ -74,7 +74,8 @@ def resource_stream(pkg, resource):
 
 def resource_listdir(pkg, resource):
     path = get_res_path(pkg, resource)
-    return os.path.listdir(path)
+    #return os.path.listdir(path)
+    return os.listdir(path)
 
 
 ### Utility functions ###
@@ -163,7 +164,8 @@ class FigletFont(object):
     @classmethod
     def getFonts(cls):
         return [font.rsplit('.', 2)[0] for font
-                in pkg_resources.resource_listdir('pyfiglet', 'fonts')
+                #in pkg_resources.resource_listdir('pyfiglet', 'fonts')
+                in resource_listdir('pyfiglet', 'fonts')
                 if cls.isValidFont(font)]
 
     @classmethod
