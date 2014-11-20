@@ -6,7 +6,10 @@ Python FIGlet adaption
 
 from __future__ import print_function, unicode_literals
 
-import pkg_resources
+try:
+    import pkg_resources
+except ImportError:
+    from .lib import pkg_resources
 import re
 import sys
 from optparse import OptionParser
